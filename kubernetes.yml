@@ -18,7 +18,7 @@ spec:
         app: dice-simulator
     spec:
       containers:
-        - image: genzouw/dice-simulator:1.0.5
+        - image: genzouw/dice-simulator:1.0.1
           imagePullPolicy: Always
           name: dice-simulator
           ports:
