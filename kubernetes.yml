@@ -1,0 +1,39 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dice-simulator
+spec:
+  selector:
+    matchLabels:
+      app: dice-simulator
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: dice-simulator
+    spec:
+      containers:
+        - image: genzouw/dice-simulator:1.0.5
+          imagePullPolicy: Always
+          name: dice-simulator
+          ports:
+            - containerPort: 80
+              protocol: TCP
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-dice-simulator
+spec:
+  selector:
+    app: dice-simulator
+  ports:
+    - port: 80
+  type: NodePort
