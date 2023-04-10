@@ -1,11 +1,15 @@
-var app = new Vue({
+const { createApp } = Vue;
+
+createApp({
   el: "#app",
-  data: {
-    numberOfFaces: 6,
-    totalNumberOfTrials: 100,
-    dice: [],
-    isRunning: false,
-    speed: 1,
+  data() {
+    return {
+      numberOfFaces: 6,
+      totalNumberOfTrials: 100,
+      dice: [],
+      isRunning: false,
+      speed: 1,
+    };
   },
   methods: {
     execute: function () {
@@ -31,4 +35,4 @@ var app = new Vue({
       }, 0);
     },
   },
-});
+}).mount("#app");
