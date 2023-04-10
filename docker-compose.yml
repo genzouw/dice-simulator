@@ -1,8 +1,7 @@
 version: "2"
 services:
   web:
-    build:
-      context: .
+    image: httpd:2.4.41-alpine
     ports:
       - 10101:80
     volumes:
