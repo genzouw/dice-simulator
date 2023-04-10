@@ -1,5 +1,5 @@
 var app = new Vue({
-  el: '#app',
+  el: "#app",
   data: {
     numberOfFaces: 6,
     totalNumberOfTrials: 100,
@@ -9,25 +9,26 @@ var app = new Vue({
   },
   methods: {
     execute: function () {
-      this.dice = Array(parseInt(this.numberOfFaces)).fill(0)
+      this.dice = Array(parseInt(this.numberOfFaces)).fill(0);
 
-      this.isRunning = true
+      this.isRunning = true;
 
       let timer = setInterval(() => {
         if (this.cumulativeNumberOfTrials() >= this.totalNumberOfTrials) {
-          clearInterval(timer)
-          this.isRunning = false
-          return
+          clearInterval(timer);
+          this.isRunning = false;
+          return;
         }
 
-        this.dice[parseInt(Math.random() * this.dice.length)]++
+        this.dice[parseInt(Math.random() * this.dice.length)]++;
 
         app.$forceUpdate();
-
-      }, this.speed)
+      }, this.speed);
     },
     cumulativeNumberOfTrials: function () {
-      return this.dice.reduce((s, i) => { return s + i }, 0)
-    }
-  }
-})
+      return this.dice.reduce((s, i) => {
+        return s + i;
+      }, 0);
+    },
+  },
+});
