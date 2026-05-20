@@ -26,7 +26,7 @@
 
 ## セルフチェック
 
-- [ ] 既存の lint / typecheck / test がパスする
+- [ ] 既存の lint (commitlint 等) がパスする
 - [ ] 破壊的変更がある場合、README または docs を更新した
 - [ ] secret / 個人情報を含むコードや設定が含まれていない
 
