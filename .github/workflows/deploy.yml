@@ -56,17 +56,18 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       # 配信するのは静的コンテンツのみ。リポジトリ管理用のファイル
-      # (CI 設定・lint 設定など) は公開ディレクトリに置かない。
+      # (CI 設定・lint 設定・ドキュメントなど) を除外方式で列挙すると、
+      # 新しいファイルが増えるたびに除外漏れが発生する。そのため
+      # 「配信するファイルだけを明示的に許可する」方式にしている。
       - name: Sync to S3
         run: |
           aws s3 sync . "s3://${S3_BUCKET}/${S3_PREFIX}/" \
             --delete \
-            --exclude ".git/*" \
-            --exclude ".github/*" \
-            --exclude ".editorconfig" \
-            --exclude ".coderabbit.yaml" \
-            --exclude "commitlint.config.js" \
-            --exclude "README.md" \
+            --exclude "*" \
+            --include "index.html" \
+            --include "main.js" \
+            --include "dice-with-a-six.png" \
+            --include "favicons/*" \
             --cache-control "public, max-age=3600"
 
       - name: Invalidate CloudFront
