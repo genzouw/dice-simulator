@@ -1,9 +1,0 @@
-version: "2"
-services:
-  web:
-    image: httpd:2.4.41-alpine
-    ports:
-      - 10101:80
-    volumes:
-      - .:/usr/local/apache2/htdocs/
-    restart: always

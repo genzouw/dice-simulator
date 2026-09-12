@@ -1,0 +1,97 @@
+# =============================================================================
+# dice-simulator.genzouw.com デプロイ
+# =============================================================================
+# main への push で静的ファイルを S3 へ同期し、CloudFront のキャッシュを消す。
+# ビルド工程は無い (クライアントサイド Vue をそのまま配信する)。
+# =============================================================================
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: ap-northeast-1
+  S3_BUCKET: genzouw-static-content
+  S3_PREFIX: dice-simulator
+  CLOUDFRONT_DISTRIBUTION_ID: E6OM0XCJX1HGU
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write # OIDC で AWS ロールを引き受けるために必要
+      contents: read
+
+    # 本リポジトリは公開されているため、本番デプロイは GitHub Environment 経由に
+    # 限定している。この宣言があると OIDC トークンの subject が
+    #
+    #   repo:genzouw/dice-simulator:environment:production
+    #
+    # となり、AWS 側の信頼ポリシーがこの形だけを許可している。environment を
+    # 宣言しないワークフローや main 以外のブランチからのワークフローは、
+    # デプロイ用ロールを引き受けられない (production 環境のデプロイ可能ブランチを
+    # main に限定しているため)。
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@f24d7193d98baebaeacc7e2227925dd47cc267f5 # v4.2.0
+        with:
+          role-to-assume: arn:aws:iam::107060754911:role/genzouw-github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 配信するのは静的コンテンツのみ。リポジトリ管理用のファイル
+      # (CI 設定・lint 設定・ドキュメントなど) を除外方式で列挙すると、
+      # 新しいファイルが増えるたびに除外漏れが発生する。そのため
+      # 「配信するファイルだけを明示的に許可する」方式にしている。
+      # dice-with-a-six.png は index.html / main.js から参照されておらず、
+      # GitHub の social preview にも使われていない未使用ファイルのため
+      # 配信対象に含めない。
+      - name: Sync to S3
+        run: |
+          aws s3 sync . "s3://${S3_BUCKET}/${S3_PREFIX}/" \
+            --delete \
+            --exclude "*" \
+            --include "index.html" \
+            --include "main.js" \
+            --include "favicons/*" \
+            --cache-control "public, max-age=3600"
+
+      # index.html と main.js はファイル名にハッシュを含まないため、直後の
+      # CloudFront invalidation だけではブラウザ側のキャッシュに効かない。
+      # deploy 直後に確実に最新を取得できるよう no-cache (= 毎回サーバへ
+      # 再検証させる) で上書きする。favicons は更新頻度が低いため 1 時間
+      # キャッシュ (Sync to S3 で設定済み) のままでよい。
+      - name: Override Cache-Control for index.html and main.js
+        run: |
+          aws s3 cp index.html "s3://${S3_BUCKET}/${S3_PREFIX}/index.html" \
+            --cache-control "no-cache"
+          aws s3 cp main.js "s3://${S3_BUCKET}/${S3_PREFIX}/main.js" \
+            --cache-control "no-cache"
+
+      # この distribution は dice-simulator 以外に hyakunin / hyakuninissyu /
+      # kakezan とも共用している (CloudFront Function genzouw-spa-spa-router
+      # が Host ヘッダーに応じて request.uri に /${S3_PREFIX} を前置しており、
+      # これはキャッシュルックアップ前に実行されるためキャッシュキーにも
+      # prefix が含まれる)。invalidation を /${S3_PREFIX}/* に絞ることで、
+      # 他サイトのキャッシュを巻き込まずに済む。
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" \
+            --paths "/${S3_PREFIX}/*"
