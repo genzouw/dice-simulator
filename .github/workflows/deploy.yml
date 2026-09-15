@@ -59,7 +59,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          cp index.html main.js dice-with-a-six.png dist/
+          cp index.html main.js dist/
           cp -R favicons dist/
 
       - name: Configure AWS credentials
