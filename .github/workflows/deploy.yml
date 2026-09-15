@@ -76,6 +76,18 @@ jobs:
             --delete \
             --cache-control "public, max-age=3600"
 
+      # index.html と main.js はファイル名にハッシュを含まないため、直後の
+      # CloudFront invalidation だけではブラウザ側のキャッシュに効かない。
+      # deploy 直後に確実に最新を取得できるよう no-cache (= 毎回サーバへ
+      # 再検証させる) で上書きする。favicons は更新頻度が低いため 1 時間
+      # キャッシュ (Sync to S3 で設定済み) のままでよい。
+      - name: Override Cache-Control for index.html and main.js
+        run: |
+          aws s3 cp dist/index.html "s3://${S3_BUCKET}/${S3_PREFIX}/index.html" \
+            --cache-control "no-cache"
+          aws s3 cp dist/main.js "s3://${S3_BUCKET}/${S3_PREFIX}/main.js" \
+            --cache-control "no-cache"
+
       # 配信元の S3 バケットと CloudFront distribution は他のサブドメインと共有して
       # いる。"/*" で消すと hyakuninissyu / kakezan / kanji のキャッシュまで巻き添えに
       # なるため、自分のプレフィックス配下だけを対象にする。
