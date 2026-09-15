@@ -55,6 +55,11 @@ jobs:
       # 除外の書き忘れがそのまま公開に直結する (拒否リストの失敗モード)。
       # 配信するファイルを明示して集める方式なら、新しく増えたファイルは
       # 既定で公開されない。
+      #
+      # dice-with-a-six.png は index.html / main.js から参照されておらず
+      # (og:image も favicons/site-tile-150x150.png を指している)、GitHub の
+      # social preview にも使われていない未使用ファイルのため配信対象に
+      # 含めない。
       - name: Collect publishable files
         run: |
           set -euo pipefail
