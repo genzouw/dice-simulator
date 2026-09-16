@@ -49,27 +49,36 @@ jobs:
         with:
           persist-credentials: false
 
+      # 配信するものだけを集める。
+      #
+      # 以前はリポジトリ全体を sync し、CI 設定などを --exclude で落としていたが、
+      # 除外の書き忘れがそのまま公開に直結する (拒否リストの失敗モード)。
+      # 配信するファイルを明示して集める方式なら、新しく増えたファイルは
+      # 既定で公開されない。
+      #
+      # dice-with-a-six.png は index.html / main.js から参照されておらず
+      # (og:image も favicons/site-tile-150x150.png を指している)、GitHub の
+      # social preview にも使われていない未使用ファイルのため配信対象に
+      # 含めない。
+      - name: Collect publishable files
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp index.html main.js dist/
+          cp -R favicons dist/
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
         with:
           role-to-assume: arn:aws:iam::107060754911:role/genzouw-github-actions-deploy
           aws-region: ${{ env.AWS_REGION }}
 
-      # 配信するのは静的コンテンツのみ。リポジトリ管理用のファイル
-      # (CI 設定・lint 設定・ドキュメントなど) を除外方式で列挙すると、
-      # 新しいファイルが増えるたびに除外漏れが発生する。そのため
-      # 「配信するファイルだけを明示的に許可する」方式にしている。
-      # dice-with-a-six.png は index.html / main.js から参照されておらず、
-      # GitHub の social preview にも使われていない未使用ファイルのため
-      # 配信対象に含めない。
+      # dist/ に無いものは S3 からも消える (--delete)。過去に誤って公開された
+      # ファイルもこれで取り除かれる。
       - name: Sync to S3
         run: |
-          aws s3 sync . "s3://${S3_BUCKET}/${S3_PREFIX}/" \
+          aws s3 sync dist/ "s3://${S3_BUCKET}/${S3_PREFIX}/" \
             --delete \
-            --exclude "*" \
-            --include "index.html" \
-            --include "main.js" \
-            --include "favicons/*" \
             --cache-control "public, max-age=3600"
 
       # index.html と main.js はファイル名にハッシュを含まないため、直後の
@@ -79,17 +88,17 @@ jobs:
       # キャッシュ (Sync to S3 で設定済み) のままでよい。
       - name: Override Cache-Control for index.html and main.js
         run: |
-          aws s3 cp index.html "s3://${S3_BUCKET}/${S3_PREFIX}/index.html" \
+          aws s3 cp dist/index.html "s3://${S3_BUCKET}/${S3_PREFIX}/index.html" \
             --cache-control "no-cache"
-          aws s3 cp main.js "s3://${S3_BUCKET}/${S3_PREFIX}/main.js" \
+          aws s3 cp dist/main.js "s3://${S3_BUCKET}/${S3_PREFIX}/main.js" \
             --cache-control "no-cache"
 
-      # この distribution は dice-simulator 以外に hyakunin / hyakuninissyu /
-      # kakezan とも共用している (CloudFront Function genzouw-spa-spa-router
-      # が Host ヘッダーに応じて request.uri に /${S3_PREFIX} を前置しており、
-      # これはキャッシュルックアップ前に実行されるためキャッシュキーにも
-      # prefix が含まれる)。invalidation を /${S3_PREFIX}/* に絞ることで、
-      # 他サイトのキャッシュを巻き込まずに済む。
+      # 配信元の S3 バケットと CloudFront distribution は他のサブドメインと共有して
+      # いる。"/*" で消すと hyakunin / hyakuninissyu / kakezan / kanji のキャッシュまで
+      # 巻き添えになるため、自分のプレフィックス配下だけを対象にする。
+      #
+      # CloudFront Function がビューワーリクエストの URI を "/dice-simulator/..." に
+      # 書き換えたものがキャッシュキーになるので、invalidation もこの形で指定する。
       - name: Invalidate CloudFront
         run: |
           aws cloudfront create-invalidation \
