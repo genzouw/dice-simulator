@@ -94,8 +94,8 @@ jobs:
             --cache-control "no-cache"
 
       # 配信元の S3 バケットと CloudFront distribution は他のサブドメインと共有して
-      # いる。"/*" で消すと hyakuninissyu / kakezan / kanji のキャッシュまで巻き添えに
-      # なるため、自分のプレフィックス配下だけを対象にする。
+      # いる。"/*" で消すと hyakunin / hyakuninissyu / kakezan / kanji のキャッシュまで
+      # 巻き添えになるため、自分のプレフィックス配下だけを対象にする。
       #
       # CloudFront Function がビューワーリクエストの URI を "/dice-simulator/..." に
       # 書き換えたものがキャッシュキーになるので、invalidation もこの形で指定する。
