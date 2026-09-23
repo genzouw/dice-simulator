@@ -1,0 +1,67 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "semanticCommits": "enabled",
+  "semanticCommitScope": "deps",
+  "timezone": "Asia/Tokyo",
+  "schedule": [
+    "* * * * 1"
+  ],
+  "minimumReleaseAge": "7 days",
+  "html": {
+    "description": [
+      "html manager を無効化する。",
+      "本リポジトリの HTML は Bootstrap 4 時代の CDN 参照 (popper.js@1.12.9 + SRI ハッシュ) を含む。",
+      "有効にすると Renovate が popper.js の 1.x / 2.x / digest で 3 本の PR を作る。",
+      "popper.js v2 はパッケージ自体が @popperjs/core へ移行しており、",
+      "CDN の URL とグローバル変数が変わるため、そのまま差し替えると画面が壊れる。",
+      "CI にブラウザ実行の検証が無くこの破損を検出できないため、対象外にする。",
+      "Dependabot は HTML の CDN 参照を扱わないため、無効化は従来の運用範囲と一致する。"
+    ],
+    "enabled": false
+  },
+  "prConcurrentLimit": 5,
+  "labels": [
+    "dependencies"
+  ],
+  "reviewers": [
+    "genzouw"
+  ],
+  "vulnerabilityAlerts": {
+    "description": [
+      "脆弱性修正は minimumReleaseAge と schedule の対象外にして即時 PR にする。",
+      "Dependabot の cooldown が security updates に効かなかったのと同じ挙動を保つため。"
+    ],
+    "minimumReleaseAge": null,
+    "schedule": [],
+    "addLabels": [
+      "security"
+    ]
+  },
+  "packageRules": [
+    {
+      "description": [
+        "依存更新はすべて chore プレフィックスで出す。",
+        "config:recommended に含まれる :semanticPrefixFixDepsChoreOthers は本番依存を fix にするが、",
+        "fix は release 生成ツールがリリース対象として扱うため、Dependabot 時代と同じ chore に固定する。"
+      ],
+      "matchPackageNames": [
+        "*"
+      ],
+      "semanticCommitType": "chore"
+    },
+    {
+      "description": "GitHub Actions の更新のプレフィックスとラベル (Dependabot の commit-message.prefix と同じ)",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "semanticCommitType": "ci",
+      "addLabels": [
+        "github-actions"
+      ]
+    }
+  ]
+}
