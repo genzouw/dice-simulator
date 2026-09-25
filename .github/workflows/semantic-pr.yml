@@ -1,0 +1,23 @@
+name: semantic-pr
+
+# 本ワークフローは genzouw/ci-workflows の reusable workflow を呼び出す薄いスタブ。
+# ロジックの実体・変更は ci-workflows 側で一元管理する (トリガー定義のみここで持つ)。
+# 参照 SHA の更新は Renovate (github-actions manager) が自動で PR を出す。
+# PR タイトルの Conventional Commits 準拠を検査する。
+# `pull_request_target` は使わない (fork PR からのシークレット漏洩対策)。
+on:
+  pull_request:
+    branches: [main, master]
+    types: [opened, edited, reopened, ready_for_review, synchronize]
+
+concurrency:
+  group: semantic-pr-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  semantic-pr:
+    uses: genzouw/ci-workflows/.github/workflows/semantic-pr.yml@c7627b6a99d8b3a2c8e8cdeba120c42070f37bd0 # v1.3.1
