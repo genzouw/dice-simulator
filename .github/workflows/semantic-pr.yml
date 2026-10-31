@@ -20,4 +20,4 @@ permissions:
 
 jobs:
   semantic-pr:
-    uses: genzouw/ci-workflows/.github/workflows/semantic-pr.yml@1668de0d6dd8bbebce1dd53d32059f8de81390c5 # v1.5.40
+    uses: genzouw/ci-workflows/.github/workflows/semantic-pr.yml@2158501912b36c580bbefd95ae333da520ee1b3e # v1.5.42
